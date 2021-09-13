@@ -3,6 +3,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import javax.sql.DataSource;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -11,8 +12,9 @@ public class MasterReplicaRoutingDataSource extends com.haulmont.npaddonsdemor2.
 
     private Map<String, DataSource> dataSourceBeans;
 
-    public MasterReplicaRoutingDataSource(DataSource master, DataSource slave) {
-        super(master, slave);
+
+    public MasterReplicaRoutingDataSource(DataSource masterDataSource, List<DataSource> slaveDataSources) {
+        super(masterDataSource, slaveDataSources);
     }
 
     @Override

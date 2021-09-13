@@ -4,34 +4,51 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MasterReplicaRoutingDataSource extends AbstractRoutingDataSource {
-    private static final ThreadLocal<DataSourceType> currentDataSource = new ThreadLocal<>();
+    private static final String MASTER_DATASOURCE = "master";
+    private static final String REPLICA_DATASOURCE = "replica";
 
-    protected MasterReplicaRoutingDataSource(DataSource master, DataSource slave) {
-        Map<Object, Object> dataSources = new HashMap<>();
-        dataSources.put(DataSourceType.MASTER, master);
-        dataSources.put(DataSourceType.REPLICA, slave);
+    private static final ThreadLocal<String> currentDataSource = ThreadLocal.withInitial(() -> MASTER_DATASOURCE);
+    private static final ThreadLocal<Integer> slaveCounter = ThreadLocal.withInitial(() -> 1);
+    private static Integer dataSourcesSize;
+
+    protected MasterReplicaRoutingDataSource(DataSource masterDataSource, List<DataSource> slaveDataSources) {
+        Map<Object, Object> dataSources = new HashMap<>(slaveDataSources.size());
+        dataSources.put(MASTER_DATASOURCE, masterDataSource);
+
+        int i = 1;
+        for (DataSource slaveDataSource : slaveDataSources) {
+            dataSources.put(REPLICA_DATASOURCE + i++, slaveDataSource);
+        }
+        dataSourcesSize = slaveDataSources.size();
 
         super.setTargetDataSources(dataSources);
-        super.setDefaultTargetDataSource(master);
+        super.setDefaultTargetDataSource(masterDataSource);
     }
 
     public static boolean isCurrentlyReadonly() {
-        return currentDataSource.get() == DataSourceType.REPLICA;
+        return currentDataSource.get().contains(REPLICA_DATASOURCE);
     }
 
     public static void setReadonlyDataSource(boolean readOnly) {
-        currentDataSource.set(readOnly ? DataSourceType.REPLICA : DataSourceType.MASTER);
+        if (!readOnly) {
+            currentDataSource.set(MASTER_DATASOURCE);
+        } else {
+            Integer counter = slaveCounter.get();
+            currentDataSource.set(REPLICA_DATASOURCE + counter);
+            if (counter.equals(dataSourcesSize)) {
+                slaveCounter.set(1);
+            } else {
+                slaveCounter.set(++counter);
+            }
+        }
     }
 
     @Override
     protected Object determineCurrentLookupKey() {
         return currentDataSource.get();
-    }
-
-    private enum DataSourceType {
-        MASTER, REPLICA
     }
 }

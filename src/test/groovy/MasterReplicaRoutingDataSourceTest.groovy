@@ -28,6 +28,13 @@ class MasterReplicaRoutingDataSourceTest extends Specification {
     DataSource slaveDs
 
     @Autowired
+    @Qualifier("slave1Ds")
+    DataSource slave1Ds
+
+    @Autowired
+    Map<String, DataSource> dataSources
+
+    @Autowired
     MasterReplicaRoutingDataSource routingDs
 
     @Shared
@@ -49,9 +56,37 @@ class MasterReplicaRoutingDataSourceTest extends Specification {
         "Ivanov" == owners.get(0).lastName
     }
 
-    def "Test read-only transaction"() {
+    def "Test read-only transaction and round-robin routing"() {
+
         when:
         def owners = ownerServiceInner.findAllReadOnly()
+
+        then:
+        slaveDs == routingDs.determineTargetDataSource()
+        !owners.isEmpty()
+        "Anton_Slave" == owners.get(0).firstName
+        "Ivanov_Slave" == owners.get(0).lastName
+
+        when:
+        owners = ownerServiceInner.findAllReadOnly()
+
+        then:
+        slave1Ds == routingDs.determineTargetDataSource()
+        !owners.isEmpty()
+        "Anton_Slave1" == owners.get(0).firstName
+        "Ivanov_Slave1" == owners.get(0).lastName
+
+        when:
+        owners = ownerServiceInner.findAllReadOnly()
+
+        then:
+        masterDs == routingDs.determineTargetDataSource()
+        !owners.isEmpty()
+        "Anton" == owners.get(0).firstName
+        "Ivanov" == owners.get(0).lastName
+
+        when:
+        owners = ownerServiceInner.findAllReadOnly()
 
         then:
         slaveDs == routingDs.determineTargetDataSource()

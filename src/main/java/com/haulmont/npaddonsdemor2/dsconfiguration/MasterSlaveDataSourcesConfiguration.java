@@ -1,9 +1,8 @@
 package com.haulmont.npaddonsdemor2.dsconfiguration;
 
-import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,34 +13,44 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
+import java.util.List;
 
 @Configuration
 public class MasterSlaveDataSourcesConfiguration {
 
-    @Bean
-    @ConfigurationProperties(prefix = "datasource.master")
-    public DataSourceProperties masterDataSource() {
-        return new DataSourceProperties();
-    }
-
-    @Bean
+    @Bean("slaveDs")
     @ConfigurationProperties(prefix = "datasource.slave")
-    public DataSourceProperties slaveDataSource() {
-        return new DataSourceProperties();
+    public DataSource slaveDataSource() {
+        return DataSourceBuilder.create().build();
     }
 
-    @Bean
-    public DataSource routingDataSource() {
+    @Bean("slave1Ds")
+    @ConfigurationProperties(prefix = "datasource.slave1")
+    public DataSource slave1DataSource() {
+        return DataSourceBuilder.create().build();
+    }
+
+    @Bean("masterDs")
+    @ConfigurationProperties(prefix = "datasource.master")
+    public DataSource masterDataSource() {
+        return DataSourceBuilder.create().build();
+    }
+
+    @Bean("routingDs")
+    @Primary
+    public DataSource routingDataSource(@Qualifier("masterDs") DataSource masterDataSource,
+                                        List<DataSource> slaveDataSources) {
         return new MasterReplicaRoutingDataSource(
-                dataSourceFromProperties(masterDataSource()),
-                dataSourceFromProperties(slaveDataSource())
+                masterDataSource,
+                slaveDataSources
         );
     }
 
     @Bean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder) {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder,
+                                                                       @Qualifier("routingDs") DataSource routingDataSource) {
         return builder
-                .dataSource(routingDataSource())
+                .dataSource(routingDataSource)
                 .packages("com.haulmont.npaddonsdemor2")
                 .build();
     }
@@ -55,13 +64,5 @@ public class MasterSlaveDataSourcesConfiguration {
     @Bean(name = "jpaTxManager")
     public PlatformTransactionManager jpaTransactionManager(EntityManagerFactory emf) {
         return new JpaTransactionManager(emf);
-    }
-
-    protected DataSource dataSourceFromProperties(DataSourceProperties properties) {
-        PGSimpleDataSource dataSource = new PGSimpleDataSource();
-        dataSource.setURL(properties.getUrl());
-        dataSource.setUser(properties.getUsername());
-        dataSource.setPassword(properties.getPassword());
-        return dataSource;
     }
 }
