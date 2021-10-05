@@ -1,5 +1,7 @@
 import com.haulmont.npaddonsdemor2.dsconfiguration.MasterSlaveDataSourcesConfiguration;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -7,10 +9,10 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
-import java.util.List;
 
 @Configuration
 @ComponentScan(basePackages = "com.haulmont.npaddonsdemor2",
@@ -18,7 +20,7 @@ import java.util.List;
                 pattern = "com.haulmont.npaddonsdemor2.dsconfiguration.* " +
                         "|| com.haulmont.npaddonsdemor2.NpAddonsDemoR2Application"))
 @EnableAutoConfiguration
-@EnableJpaRepositories(basePackages = "com.haulmont.npaddonsdemor2")
+@EnableJpaRepositories(basePackages = "com.haulmont.npaddonsdemor2.repository")
 @EnableTransactionManagement
 public class DemoR2TestConfiguration {
 
@@ -51,9 +53,13 @@ public class DemoR2TestConfiguration {
                     .build();
         }
 
-        @Override
-        public DataSource routingDataSource(DataSource masterDataSource, List<DataSource> slaveDataSources) {
-            return new MasterReplicaRoutingDataSource(masterDataSource, slaveDataSources);
+        @Bean
+        public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder,
+                                                                           @Qualifier("proxyRoutingDs") DataSource routingDataSource) {
+            return builder
+                    .dataSource(routingDataSource)
+                    .packages("com.haulmont.npaddonsdemor2")
+                    .build();
         }
 
         @Bean

@@ -5,7 +5,7 @@ services:
     depends_on:
       - pg-master
       - pg-slave
-    image: r2-demo
+    image: np-addons-demo-r2:0.0.1-SNAPSHOT
     volumes:
       - ./np-addons-demo-r2:/opt/np-addons-demo-r2-home
     ports:

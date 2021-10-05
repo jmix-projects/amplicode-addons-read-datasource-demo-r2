@@ -23,4 +23,9 @@ public class OwnerServiceOuter {
     public List<Owner> findAllReadOnly() {
         return ownerServiceInner.findAll();
     }
+
+    @Transactional(readOnly = true)
+    public List<Owner> findAllRequiresNew() {
+        return ownerServiceInner.findAllRequiresNew();
+    }
 }
