@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  app:
+    depends_on:
+      - pg-master
+      - pg-slave
+    image: np-addons-demo-r2:0.0.1-SNAPSHOT
+    volumes:
+      - ./np-addons-demo-r2:/opt/np-addons-demo-r2-home
+    ports:
+      - "8080:8080"
+  pg-master:
+    image: docker.io/bitnami/postgresql:11
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=replicator
+      - POSTGRESQL_REPLICATION_PASSWORD=replicator
+      - POSTGRESQL_USERNAME=root
+      - POSTGRESQL_PASSWORD=root
+      - POSTGRESQL_DATABASE=r2demo
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "5433:5432"
+  pg-slave:
+    image: docker.io/bitnami/postgresql:11
+    depends_on:
+      - pg-master
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_REPLICATION_USER=replicator
+      - POSTGRESQL_REPLICATION_PASSWORD=replicator
+      - POSTGRESQL_MASTER_HOST=pg-master
+      - POSTGRESQL_PASSWORD=root
+      - POSTGRESQL_MASTER_PORT_NUMBER=5432
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "5434:5432"
+volumes:
+  pg_data:
+    driver: local
