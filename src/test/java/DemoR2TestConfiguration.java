@@ -24,8 +24,6 @@ import javax.sql.DataSource;
 @EnableTransactionManagement
 public class DemoR2TestConfiguration {
 
-    //todo: maybe we should not extend the app configuration and just reuse the same code from the app config. now for example
-    // the test depends on data sources definitions order in the app config
     @Configuration
     static class MasterSlaveDataSourcesTestConfiguration extends MasterSlaveDataSourcesConfiguration {
 
