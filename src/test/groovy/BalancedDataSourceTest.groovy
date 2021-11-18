@@ -1,20 +1,25 @@
-import com.haulmont.npaddonsdemor2.dsconfiguration.MasterReplicaRoutingDataSource
-import com.haulmont.npaddonsdemor2.repository.OwnerRepository
-import com.haulmont.npaddonsdemor2.service.OwnerServiceInner
-import com.haulmont.npaddonsdemor2.service.OwnerServiceOuter
+import com.amplicode.readdatasourcedemo.BalancedDataSource
+import com.amplicode.readdatasourcedemo.DemoApplication
+import com.amplicode.readdatasourcedemo.entity.Owner
+import com.amplicode.readdatasourcedemo.repository.OwnerRepository
+import com.amplicode.readdatasourcedemo.service.OwnerServiceInner
+import com.amplicode.readdatasourcedemo.service.OwnerServiceOuter
 import org.spockframework.spring.EnableSharedInjection
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.dao.DataAccessException
 import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.test.context.ContextConfiguration
+import org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy
+import org.springframework.test.context.TestPropertySource
 import spock.lang.Shared
 import spock.lang.Specification
 
 import javax.sql.DataSource
 
-@ContextConfiguration(classes = DemoR2TestConfiguration)
 @EnableSharedInjection
-class MasterReplicaRoutingDataSourceTest extends Specification {
+@SpringBootTest(classes = [DemoApplication, DemoTestConfiguration])
+@TestPropertySource("classpath:test-application.properties")
+class BalancedDataSourceTest extends Specification {
 
     @Autowired
     OwnerServiceInner ownerServiceInner
@@ -23,22 +28,7 @@ class MasterReplicaRoutingDataSourceTest extends Specification {
     OwnerServiceOuter ownerServiceOuter
 
     @Autowired
-    @Qualifier("masterDs")
-    DataSource masterDs
-
-    @Autowired
-    @Qualifier("slaveDs")
-    DataSource slaveDs
-
-    @Autowired
-    @Qualifier("slave1Ds")
-    DataSource slave1Ds
-
-    @Autowired
-    Map<String, DataSource> dataSources
-
-    @Autowired
-    MasterReplicaRoutingDataSource routingDs
+    DataSource dataSource
 
     @Shared
     @Autowired
@@ -48,10 +38,16 @@ class MasterReplicaRoutingDataSourceTest extends Specification {
     OwnerRepository ownerRepository
 
     void setup() {
-        routingDs.clearSlaveCounter()
+        DataSource targetDataSource = null
+        if (dataSource instanceof LazyConnectionDataSourceProxy) {
+            targetDataSource = dataSource.getTargetDataSource();
+        }
+        if (targetDataSource instanceof BalancedDataSource) {
+            (BalancedDataSource) targetDataSource.clearReadOnlyCounter()
+        }
     }
 
-    def "Test read-write transaction"() {
+    def "test read in read-write transaction"() {
         when:
         def owners = ownerServiceInner.findAll()
 
@@ -61,7 +57,28 @@ class MasterReplicaRoutingDataSourceTest extends Specification {
         "Ivanov" == owners.get(0).lastName
     }
 
-    def "Test read-only transaction and round-robin routing"() {
+    def "test write in read-write transaction"() {
+        when:
+        Owner owner = new Owner(firstName: "Alex", lastName: "Petrov", address: "Address", city: "Samara")
+
+        def saved = ownerServiceInner.saveAndGet(owner)
+
+        then:
+        saved != null
+    }
+
+    def "test write in read-only transaction"() {
+        when:
+        Owner owner = new Owner(firstName: "Alex", lastName: "Petrov", address: "Address", city: "Samara")
+
+        ownerServiceInner.saveAndGetReadOnly(owner)
+
+        then:
+        thrown(DataAccessException)
+    }
+
+
+    def "test read-only transaction and round-robin routing"() {
 
         when:
         def owners = ownerServiceInner.findAllReadOnly()
@@ -70,14 +87,6 @@ class MasterReplicaRoutingDataSourceTest extends Specification {
         !owners.isEmpty()
         "Anton_Slave" == owners.get(0).firstName
         "Ivanov_Slave" == owners.get(0).lastName
-
-        when:
-        owners = ownerServiceInner.findAllReadOnly()
-
-        then:
-        !owners.isEmpty()
-        "Anton_Slave1" == owners.get(0).firstName
-        "Ivanov_Slave1" == owners.get(0).lastName
 
         when:
         owners = ownerServiceInner.findAllReadOnly()

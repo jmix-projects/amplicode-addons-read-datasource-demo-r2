@@ -1,6 +1,6 @@
-package com.haulmont.npaddonsdemor2.repository;
+package com.amplicode.readdatasourcedemo.repository;
 
-import com.haulmont.npaddonsdemor2.entity.PetType;
+import com.amplicode.readdatasourcedemo.entity.PetType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PetTypeRepository extends JpaRepository<PetType, Long> {

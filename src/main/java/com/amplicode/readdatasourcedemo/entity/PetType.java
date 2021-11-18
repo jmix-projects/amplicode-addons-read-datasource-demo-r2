@@ -1,4 +1,4 @@
-package com.haulmont.npaddonsdemor2.entity;
+package com.amplicode.readdatasourcedemo.entity;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

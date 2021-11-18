@@ -1,7 +1,7 @@
-package com.haulmont.npaddonsdemor2.service;
+package com.amplicode.readdatasourcedemo.service;
 
-import com.haulmont.npaddonsdemor2.entity.Owner;
-import com.haulmont.npaddonsdemor2.repository.OwnerRepository;
+import com.amplicode.readdatasourcedemo.entity.Owner;
+import com.amplicode.readdatasourcedemo.repository.OwnerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +19,18 @@ public class OwnerServiceInner {
     @Transactional
     public List<Owner> findAll() {
         return ownerRepository.findAll();
+    }
+
+    @Transactional
+    public Owner saveAndGet(Owner owner) {
+        ownerRepository.saveAndFlush(owner);
+        return ownerRepository.findById(owner.getId()).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public Owner saveAndGetReadOnly(Owner owner) {
+        ownerRepository.saveAndFlush(owner);
+        return ownerRepository.findById(owner.getId()).orElse(null);
     }
 
     @Transactional(readOnly = true)

@@ -1,6 +1,6 @@
-package com.haulmont.npaddonsdemor2.repository;
+package com.amplicode.readdatasourcedemo.repository;
 
-import com.haulmont.npaddonsdemor2.entity.Pet;
+import com.amplicode.readdatasourcedemo.entity.Pet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

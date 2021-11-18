@@ -1,6 +1,6 @@
-package com.haulmont.npaddonsdemor2.service;
+package com.amplicode.readdatasourcedemo.service;
 
-import com.haulmont.npaddonsdemor2.entity.Owner;
+import com.amplicode.readdatasourcedemo.entity.Owner;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

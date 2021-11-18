@@ -1,6 +1,6 @@
-package com.haulmont.npaddonsdemor2.repository;
+package com.amplicode.readdatasourcedemo.repository;
 
-import com.haulmont.npaddonsdemor2.entity.Visit;
+import com.amplicode.readdatasourcedemo.entity.Visit;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VisitRepository extends JpaRepository<Visit, Long> {

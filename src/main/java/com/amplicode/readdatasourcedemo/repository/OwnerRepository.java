@@ -1,6 +1,6 @@
-package com.haulmont.npaddonsdemor2.repository;
+package com.amplicode.readdatasourcedemo.repository;
 
-import com.haulmont.npaddonsdemor2.entity.Owner;
+import com.amplicode.readdatasourcedemo.entity.Owner;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
