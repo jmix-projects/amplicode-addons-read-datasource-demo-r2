@@ -1,3 +1,4 @@
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -11,26 +12,24 @@ public class DemoTestConfiguration {
     @Bean("readonlyDatasource")
     public DataSource readOnlyDatasource() {
         return new EmbeddedDatabaseBuilder()
-                .setName("slave;sql.syntax_pgs=true")
-                .addScripts("scripts/schema.sql", "scripts/data-slave.sql")
+                .setName("readOnly;sql.syntax_pgs=true")
                 .build();
     }
 
     @Bean("mainDatasource")
     public DataSource mainDatasource() {
         return new EmbeddedDatabaseBuilder()
-                .setName("master;sql.syntax_pgs=true")
-                .addScripts("scripts/schema.sql", "scripts/data-master.sql")
+                .setName("main;sql.syntax_pgs=true")
                 .build();
     }
 
     @Bean
-    public JdbcTemplate mainJdbcTemplate() {
-        return new JdbcTemplate(mainDatasource());
+    public JdbcTemplate mainJdbcTemplate(@Qualifier("mainDatasource") DataSource mainDatasource) {
+        return new JdbcTemplate(mainDatasource);
     }
 
     @Bean
-    public JdbcTemplate readOnlyJdbcTemplate() {
-        return new JdbcTemplate(readOnlyDatasource());
+    public JdbcTemplate readOnlyJdbcTemplate(@Qualifier("readonlyDatasource") DataSource readonlyDatasource) {
+        return new JdbcTemplate(readonlyDatasource);
     }
 }
